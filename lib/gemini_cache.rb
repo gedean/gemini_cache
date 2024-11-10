@@ -122,4 +122,12 @@ module GeminiCache
   rescue Faraday::Error => e
     raise "Erro na requisição: #{e.message}"
   end
+
+  def self.delete_all
+    GeminiCache.list.each { |item| item.delete }
+  end
+
+  class << self
+    alias clear delete_all
+  end
 end

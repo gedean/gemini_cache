@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'gemini_cache'
-  s.version       = '0.0.2'
+  s.version       = '0.0.3'
   s.date          = '2024-11-10'
   s.platform      = Gem::Platform::RUBY
   s.summary       = 'Ruby Gemini Context Caching'
