@@ -146,5 +146,11 @@ module GeminiCache
 
   def self.read_local_file(file_path) = Base64.strict_encode64(File.read(file_path))
   def self.read_remote_file(file_url) = Base64.strict_encode64(URI.open(file_url).read)
-  def self.read_nokogiri_html(url) = Nokogiri::HTML(URI.open(url))
+
+  def self.read_nokogiri_html(url, default_remover: true)
+    doc = Nokogiri::HTML(URI.open(url))
+    %w[script style].each { |element| doc.css(element).each(&:remove) } if default_remover
+
+    doc
+  end
 end
