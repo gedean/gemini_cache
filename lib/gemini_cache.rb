@@ -4,6 +4,15 @@ require 'nokogiri'
 require 'json'
 
 module GeminiCache
+  def self.read_local_file(file_path) = Base64.strict_encode64(File.read(file_path))
+  def self.read_remote_file(file_url) = Base64.strict_encode64(URI.open(file_url).read)
+  def self.read_html(url, default_remover: true)
+    doc = Nokogiri::HTML(URI.open(url))
+    %w[script style].each { |element| doc.css(element).each(&:remove) } if default_remover
+
+    doc
+  end
+
   def self.create(parts:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 600)
     raise "Cache name already exist: '#{display_name}'" if GeminiCache.get(display_name:)
 
@@ -24,7 +33,7 @@ module GeminiCache
       req.body = content
     end
   
-    return JSON.parse(response.body) if response.status == 200
+    return get(name: JSON.parse(response.body)['name']) if response.status == 200
   
     raise "Erro ao criar cache: #{response.status} - #{response.body}"
   rescue Faraday::Error => e
@@ -39,6 +48,26 @@ module GeminiCache
     return GeminiCache.list.find { |item| item['displayName'].eql? display_name } if !display_name.nil?
   end
 
+  def self.create_from_text(text:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 600)
+    GeminiCache.create(parts: [{ text: }], display_name:, model:, ttl:)
+  end
+
+  def self.create_from_webpage(url:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 600)
+    GeminiCache.create(parts: [{ text: GeminiCache.read_html(url).inner_text }], display_name:, model:, ttl:)
+  end
+
+  def self.create_from_local_file(file_path:, mime_type:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 600)
+    parts = [{ inline_data: { mime_type:, data: GeminiCache.read_local_file(file_path) } }]
+
+    GeminiCache.create(parts:, display_name:, model:, ttl:)
+  end
+
+  def self.create_from_remote_file(file_url:, mime_type:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 600)
+    parts = [{ inline_data: { mime_type:, data: GeminiCache.read_remote_file(file_url) } }]
+
+    GeminiCache.create(parts:, display_name:, model:, ttl:)
+  end
+  
   def self.list
     conn = Faraday.new(
       url: 'https://generativelanguage.googleapis.com',
@@ -142,15 +171,5 @@ module GeminiCache
 
   class << self
     alias clear delete_all
-  end
-
-  def self.read_local_file(file_path) = Base64.strict_encode64(File.read(file_path))
-  def self.read_remote_file(file_url) = Base64.strict_encode64(URI.open(file_url).read)
-
-  def self.read_nokogiri_html(url, default_remover: true)
-    doc = Nokogiri::HTML(URI.open(url))
-    %w[script style].each { |element| doc.css(element).each(&:remove) } if default_remover
-
-    doc
   end
 end
