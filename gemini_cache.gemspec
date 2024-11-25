@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name          = 'gemini_cache'
-  s.version       = '0.0.7'
+  s.version       = '0.0.9'
   s.date          = '2024-11-23'
   s.platform      = Gem::Platform::RUBY
   s.summary       = 'Ruby Gemini Context Caching'
@@ -13,5 +13,7 @@ Gem::Specification.new do |s|
   s.homepage      = 'https://github.com/gedean/gemini_cache'
   s.license       = 'MIT'
   s.add_dependency 'faraday', '~> 2'
+  s.add_dependency 'base64', '~> 0.2.0'
+  s.add_dependency 'nokogiri', '~> 1'
   # s.post_install_message = %q{Please check readme file for use instructions.}
 end
