@@ -3,9 +3,8 @@ module ItemExtender
 
   def ttl=(new_ttl)
     GeminiCache.update(name: self['name'], content: { ttl: "#{new_ttl}s" })
-    GeminiCache.get_by_name(name: self['name'])
   end
-
+  
   def generate_content(contents:, generation_config: nil)
     conn = Faraday.new(
       url: 'https://generativelanguage.googleapis.com',

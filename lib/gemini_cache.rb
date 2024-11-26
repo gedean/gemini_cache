@@ -16,8 +16,10 @@ module GeminiCache
     doc
   end
 
-  def self.create(parts:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 300)
-    raise "Cache name already exist: '#{display_name}'" if GeminiCache.get_by_display_name(display_name:)
+  def self.create(parts:, display_name:, on_conflict: :raise_error, model: 'gemini-1.5-flash-8b', ttl: 300)
+    existing_cache = GeminiCache.find_by_display_name(display_name:)
+    raise "Cache name already exist: '#{display_name}'" if existing_cache && on_conflict.eql?(:raise_error)
+    return existing_cache if existing_cache && on_conflict.eql?(:get_existing)
 
     content = {
       model: "models/#{model}",
@@ -36,31 +38,31 @@ module GeminiCache
       req.body = content
     end
   
-    return get_by_name(name: JSON.parse(response.body)['name']) if response.status == 200
+    return find_by_name(name: JSON.parse(response.body)['name']) if response.status == 200
   
     raise "Erro ao criar cache: #{response.status} - #{response.body}"
   rescue Faraday::Error => e
     raise "Erro na requisição: #{e.message}"
   end
 
-  def self.create_from_text(text:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 300)
-    GeminiCache.create(parts: [{ text: }], display_name:, model:, ttl:)
+  def self.create_from_text(text:, display_name:, on_conflict: :raise_error, model: 'gemini-1.5-flash-8b', ttl: 300)
+    GeminiCache.create(parts: [{ text: }], display_name:, on_conflict:, model:, ttl:)
   end
 
-  def self.create_from_webpage(url:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 300)
-    create_from_text(text: GeminiCache.read_html(url:).inner_text, display_name:, model:, ttl:)
+  def self.create_from_webpage(url:, display_name:, on_conflict: :raise_error, model: 'gemini-1.5-flash-8b', ttl: 300)
+    create_from_text(text: GeminiCache.read_html(url:).inner_text, display_name:, on_conflict:, model:, ttl:)
   end
 
-  def self.create_from_local_file(path:, mime_type:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 300)
-    GeminiCache.create(parts: GeminiCache.read_local_file(path:, mime_type:), display_name:, model:, ttl:)
+  def self.create_from_local_file(path:, mime_type:, display_name:, on_conflict: :raise_error, model: 'gemini-1.5-flash-8b', ttl: 300)
+    GeminiCache.create(parts: GeminiCache.read_local_file(path:, mime_type:), display_name:, on_conflict:, model:, ttl:)
   end
 
-  def self.create_from_remote_file(url:, mime_type:, display_name:, model: 'gemini-1.5-flash-8b', ttl: 300)
-    GeminiCache.create(parts: GeminiCache.read_remote_file(url:, mime_type:), display_name:, model:, ttl:)
+  def self.create_from_remote_file(url:, mime_type:, display_name:, on_conflict: :raise_error, model: 'gemini-1.5-flash-8b', ttl: 300)
+    GeminiCache.create(parts: GeminiCache.read_remote_file(url:, mime_type:), display_name:, on_conflict:, model:, ttl:)
   end
 
-  def self.get_by_name(name: nil) = GeminiCache.list.find { |item| item['name'].eql? name }
-  def self.get_by_display_name(display_name: nil) = GeminiCache.list.find { |item| item['displayName'].eql? display_name }
+  def self.find_by_name(name: nil) = GeminiCache.list.find { |item| item['name'].eql? name }
+  def self.find_by_display_name(display_name: nil) = GeminiCache.list.find { |item| item['displayName'].eql? display_name }
 
   def self.list
     conn = Faraday.new(
