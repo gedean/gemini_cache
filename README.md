@@ -1,218 +1,153 @@
-# GeminiCache
+# GeminiCache Module Usage Documentation
 
-GeminiCache is a Ruby library for interacting with Google Gemini's Cache API. It provides a simple interface to create, manage, and manipulate content caches for use with Gemini AI models.
+## Introduction
+The `GeminiCache` module is a library designed for managing API caches, with features to process web pages, local and remote files, as well as interact with an API to create, update, list, and delete caches. This document describes its functionalities and usage.
 
-## Installation
+## Requirements
+To use the module, ensure the following Ruby libraries are installed:
 
-Add this line to your application's Gemfile:
+- `faraday`
+- `open-uri`
+- `nokogiri`
+- `json`
+- `base64`
 
+## Code Structure
+
+The module includes the following components:
+
+1. **Classes and Modules**:
+   - `GeminiCache::Error`: Class for handling custom errors.
+   - `GeminiCache`: Contains the main methods for cache management and file processing.
+
+2. **Dependencies**:
+   - `gemini_cache/configuration`
+   - `gemini_cache/api_client`
+   - `gemini_cache/item_extender`
+
+## Features
+
+### 1. HTML Parsing
+Allows processing and cleaning the content of a web page.
+
+#### Syntax
 ```ruby
-gem 'gemini_cache'
+GeminiCache.parse_html(url:, default_remover: true)
 ```
+- **Parameters**:
+  - `url`: The URL of the page to process.
+  - `default_remover`: Automatically removes `<script>` and `<style>` elements (default: `true`).
+- **Returns**: A `Nokogiri::HTML` object containing the processed HTML.
 
-And then execute:
+### 2. File Reading
 
-```bash
-$ bundle install
+#### a) Local Files
+Reads a local file and returns its Base64 encoded data.
+```ruby
+GeminiCache.read_local_file(path:, mime_type:)
 ```
+- **Parameters**:
+  - `path`: Path to the file.
+  - `mime_type`: MIME type of the file.
+- **Returns**: Hash containing the encoded data.
 
-Or install it manually:
-
-```bash
-$ gem install gemini_cache
+#### b) Remote Files
+Reads a remote file and returns its Base64 encoded data.
+```ruby
+GeminiCache.read_remote_file(url:, mime_type:)
 ```
+- **Parameters**:
+  - `url`: URL of the file.
+  - `mime_type`: MIME type of the file.
+- **Returns**: Hash containing the encoded data.
+
+### 3. Webpage Text Reading
+Extracts text content from a web page, removing unnecessary elements.
+```ruby
+GeminiCache.read_webpage_text(url:, default_remover: true)
+```
+- **Parameters**:
+  - `url`: URL of the page.
+  - `default_remover`: Automatically removes `<script>` and `<style>` elements (default: `true`).
+- **Returns**: Hash containing the page text.
+
+### 4. Cache Creation
+Creates a new cache from different data sources.
+
+#### General Syntax
+```ruby
+GeminiCache.create(parts:, display_name:, on_conflict: :raise_error, model: nil, ttl: nil)
+```
+- **Parameters**:
+  - `parts`: Cache data.
+  - `display_name`: Display name of the cache.
+  - `on_conflict`: Action on conflict (`:raise_error` or `:get_existing`).
+  - `model`: Model used (default: system configuration).
+  - `ttl`: Time-to-live for the cache (default: system configuration).
+- **Returns**: The created cache object.
+
+#### Creation Methods
+- Text:
+  ```ruby
+  GeminiCache.create_from_text(text:, **options)
+  ```
+- Web Page:
+  ```ruby
+  GeminiCache.create_from_webpage(url:, **options)
+  ```
+- Local File:
+  ```ruby
+  GeminiCache.create_from_local_file(path:, mime_type:, **options)
+  ```
+- Remote File:
+  ```ruby
+  GeminiCache.create_from_remote_file(url:, mime_type:, **options)
+  ```
+
+### 5. Cache Management
+
+#### Cache Listing
+Lists all available caches.
+```ruby
+GeminiCache.list
+```
+- **Returns**: Array of cache objects.
+
+#### Cache Retrieval
+- By Name:
+  ```ruby
+  GeminiCache.find_by_name(name:)
+  ```
+- By Display Name:
+  ```ruby
+  GeminiCache.find_by_display_name(display_name:)
+  ```
+
+#### Cache Updating
+Updates an existing cache.
+```ruby
+GeminiCache.update(name:, content:)
+```
+- **Parameters**:
+  - `name`: Name of the cache.
+  - `content`: Updated content.
+
+#### Cache Deletion
+- By Name:
+  ```ruby
+  GeminiCache.delete(name:)
+  ```
+- All Caches:
+  ```ruby
+  GeminiCache.delete_all
+  ```
 
 ## Configuration
+The methods use configurations defined in the `gemini_cache/configuration` module, and communication is handled via `gemini_cache/api_client`.
 
-Before using the library, you need to configure your Google Gemini API key. You can do this in two ways:
+## Errors
+In case of conflicts or API errors, the module raises a custom exception `GeminiCache::Error`.
 
-### 1. Using environment variables
+## Conclusion
+This documentation covers the main functionalities of the `GeminiCache` module. For more details on specific configurations, refer to the source code or official documentation.
 
-```bash
-export GEMINI_API_KEY='your_api_key_here'
-```
-
-### 2. Using the configuration block
-
-```ruby
-GeminiCache.configure do |config|
-  config.api_key = 'your_api_key_here'
-  config.timeout = 30 # optional, timeout in seconds
-  config.cache_dir = '/path/to/cache' # optional, local cache directory
-end
-```
-
-## Basic Usage
-
-### Initializing the Client
-
-```ruby
-cache = GeminiCache::Client.new
-```
-
-### Basic Operations
-
-#### Storing data in cache
-
-```ruby
-# Store a value with a key
-cache.set('my_key', 'my_value')
-
-# Store with expiration time (in seconds)
-cache.set('my_key', 'my_value', expires_in: 3600)
-```
-
-#### Retrieving data from cache
-
-```ruby
-# Retrieve a value
-value = cache.get('my_key')
-
-# Retrieve with default value if key doesn't exist
-value = cache.get('my_key', default: 'default_value')
-```
-
-#### Removing data from cache
-
-```ruby
-# Remove a specific key
-cache.delete('my_key')
-
-# Clear entire cache
-cache.clear
-```
-
-## Advanced Usage
-
-### Batch Operations
-
-```ruby
-# Store multiple values
-cache.set_multi({
-  'key1' => 'value1',
-  'key2' => 'value2'
-})
-
-# Retrieve multiple values
-values = cache.get_multi(['key1', 'key2'])
-```
-
-### Block Caching
-
-```ruby
-# Execute block only if value is not in cache
-result = cache.fetch('my_key') do
-  # computationally intensive code here
-  computed_result
-end
-```
-
-## Gemini AI Integration
-
-### Caching AI Responses
-
-```ruby
-# Basic AI response caching
-gemini = Google::Cloud::Gemini.new
-cache = GeminiCache::Client.new
-
-response = cache.fetch('gemini_query_key') do
-  gemini.generate_content('What is the meaning of life?')
-end
-```
-
-### Model-Specific Caching
-
-```ruby
-# Create separate caches for different models
-pro_cache = GeminiCache::Client.new(namespace: 'gemini-pro')
-vision_cache = GeminiCache::Client.new(namespace: 'gemini-vision')
-
-# Cache text generation results
-text_response = pro_cache.fetch('text_query') do
-  gemini_pro.generate_content('Write a poem about coding')
-end
-
-# Cache vision analysis results
-vision_response = vision_cache.fetch('image_analysis') do
-  gemini_vision.analyze_image(image_data)
-end
-```
-
-### Caching with Parameters
-
-```ruby
-# Cache with different parameters
-def get_ai_response(prompt, temperature: 0.7)
-  cache_key = "gemini_#{prompt}_#{temperature}"
-  
-  cache.fetch(cache_key, expires_in: 24.hours) do
-    gemini.generate_content(
-      prompt,
-      temperature: temperature
-    )
-  end
-end
-
-# Usage
-response1 = get_ai_response("Tell me a joke", temperature: 0.8)
-response2 = get_ai_response("Tell me a joke", temperature: 0.3)
-```
-
-### Handling Large Responses
-
-```ruby
-# Cache large responses with compression
-cache.fetch('large_response', compress: true) do
-  gemini.generate_content('Write a long story')
-end
-
-# Cache with size limits
-cache.fetch('limited_response', max_size: 1.megabyte) do
-  gemini.generate_content('Generate large content')
-end
-```
-
-## Error Handling
-
-```ruby
-begin
-  cache.get('my_key')
-rescue GeminiCache::ConnectionError => e
-  puts "Connection error: #{e.message}"
-rescue GeminiCache::TimeoutError => e
-  puts "Timeout exceeded: #{e.message}"
-rescue GeminiCache::CacheSizeError => e
-  puts "Cache size limit exceeded: #{e.message}"
-end
-```
-
-## Performance Tips
-
-- Use namespaces to organize different types of cached content
-- Set appropriate expiration times based on content volatility
-- Implement cache warming for frequently accessed content
-- Monitor cache hit rates and adjust strategies accordingly
-
-```ruby
-# Cache warming example
-def warm_cache
-  common_queries.each do |query|
-    cache.fetch(query, force: false) do
-      gemini.generate_content(query)
-    end
-  end
-end
-```
-
-## Contributing
-
-1. Fork the project
-2. Create your feature branch (`git checkout -b feature/new-feature`)
-3. Commit your changes (`git commit -am 'Add new feature'`)
-4. Push to the branch (`git push origin feature/new-feature`)
-5. Create a new Pull Request
-
-## License
-
-This gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
