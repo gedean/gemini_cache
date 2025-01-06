@@ -5,24 +5,12 @@ module ItemExtender
   DEFAULT_TIMEOUT = 300 # seconds
   ACCURATE_MODE_CONFIG = { temperature: 0, topP: 0, topK: 1 }.freeze
 
-  # Deletes the cached item
-  # @return [void]
-  def delete
-    GeminiCache.delete(name: self['name'])
-  end
+  def delete = GeminiCache.delete(name: self['name'])
 
-  # Updates the TTL of the cached item
-  # @param new_ttl [Integer] new TTL value in seconds
-  # @return [void]
   def ttl=(new_ttl)
     GeminiCache.update(name: self['name'], content: { ttl: "#{new_ttl}s" }.to_json)
   end
-  
-  # Generates content using the Gemini API
-  # @param contents [Array<Hash>] array of content parts
-  # @param generation_config [Hash, nil] optional generation configuration
-  # @return [Hash] response with added #content method
-  # @raise [GeminiAPIError] when the API request fails
+    
   def generate_content(contents:, generation_config: nil)
     response = api_client.post(generate_content_endpoint) do |req|
       req.params['key'] = ENV.fetch('GEMINI_API_KEY')
@@ -33,11 +21,7 @@ module ItemExtender
   rescue Faraday::Error => e
     raise GeminiAPIError, "Request failed: #{e.message}"
   end
-    
-  # Generates content from a single prompt
-  # @param prompt [String] the input prompt
-  # @param generation_config [Hash, Symbol] generation configuration or :accurate_mode
-  # @return [String] generated content
+
   def single_prompt(prompt:, generation_config: :accurate_mode)
     config = generation_config.eql?(:accurate_mode) ? ACCURATE_MODE_CONFIG : generation_config
     
