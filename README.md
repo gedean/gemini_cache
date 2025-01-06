@@ -148,6 +148,20 @@ The methods use configurations defined in the `gemini_cache/configuration` modul
 ## Errors
 In case of conflicts or API errors, the module raises a custom exception `GeminiCache::Error`.
 
+## Examples
+
+```ruby
+require 'gemini_cache'
+
+parts = [
+  { text: 'Some text' },
+  GeminiCache.read_remote_file(url: '<remote_file_url>', mime_type: 'application/pdf'),
+  GeminiCache.read_webpage_text(url: '<webpage url>')
+]
+
+cache = GeminiCache.create parts: parts, display_name: 'mycache'
+```	
+
 ## Conclusion
 This documentation covers the main functionalities of the `GeminiCache` module. For more details on specific configurations, refer to the source code or official documentation.
 
