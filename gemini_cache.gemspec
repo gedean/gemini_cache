@@ -15,5 +15,4 @@ Gem::Specification.new do |s|
   s.add_dependency 'faraday', '~> 2'
   s.add_dependency 'base64', '~> 0.2.0'
   s.add_dependency 'nokogiri', '~> 1'
-  # s.post_install_message = %q{Please check readme file for use instructions.}
 end
