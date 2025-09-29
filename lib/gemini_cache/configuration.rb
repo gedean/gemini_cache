@@ -4,7 +4,7 @@ module GeminiCache
 
     def initialize
       @api_base_url = 'https://generativelanguage.googleapis.com'
-      @default_model = 'gemini-1.5-flash-8b'
+      @default_model = 'gemini-flash-lite-latest'
       @default_ttl = 300
     end
   end
