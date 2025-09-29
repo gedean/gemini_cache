@@ -1,11 +1,9 @@
-# frozen_string_literal: true
-
 module ItemExtender
-  GEMINI_API_BASE_URL = 'https://generativelanguage.googleapis.com'
-  DEFAULT_TIMEOUT = 300 # seconds
   ACCURATE_MODE_CONFIG = { temperature: 0, topP: 0, topK: 1 }.freeze
 
-  def delete = GeminiCache.delete(name: self['name'])
+  def delete
+    GeminiCache.delete(name: self['name'])
+  end
 
   def ttl=(new_ttl)
     GeminiCache.update(name: self['name'], content: { ttl: "#{new_ttl}s" }.to_json)
@@ -23,7 +21,7 @@ module ItemExtender
   end
 
   def single_prompt(prompt:, generation_config: :accurate_mode)
-    config = generation_config.eql?(:accurate_mode) ? ACCURATE_MODE_CONFIG : generation_config
+    config = generation_config == :accurate_mode ? ACCURATE_MODE_CONFIG : generation_config
     
     generate_content(
       contents: [{ parts: [{ text: prompt }], role: 'user' }],
@@ -34,12 +32,15 @@ module ItemExtender
   private
 
   def api_client
-    @api_client ||= Faraday.new(
-      url: GEMINI_API_BASE_URL,
-      headers: { 'Content-Type' => 'application/json' }
-    ) do |f|
-      f.options.timeout = DEFAULT_TIMEOUT
-      f.options.open_timeout = DEFAULT_TIMEOUT
+    @api_client ||= begin
+      timeout = GeminiCache.configuration.default_timeout
+      Faraday.new(
+        url: GeminiCache.configuration.api_base_url,
+        headers: { 'Content-Type' => 'application/json' }
+      ) do |f|
+        f.options.timeout = timeout
+        f.options.open_timeout = timeout
+      end
     end
   end
 
@@ -50,8 +51,8 @@ module ItemExtender
   def build_request_body(contents, generation_config)
     {
       cached_content: self['name'],
-      contents: contents,
-      generation_config: generation_config
+      contents:,
+      generation_config:
     }.compact.to_json
   end
 

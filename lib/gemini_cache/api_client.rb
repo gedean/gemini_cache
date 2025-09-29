@@ -52,7 +52,12 @@ module GeminiCache
     def handle_response(response)
       return JSON.parse(response.body) if response.status == 200
       
-      error_message = JSON.parse(response.body)['error'] rescue response.body
+      error_message = begin
+        JSON.parse(response.body)['error']
+      rescue
+        response.body
+      end
+
       raise ApiError, "API request failed (#{response.status}): #{error_message}"
     rescue Faraday::Error => e
       raise ApiError, "Network error: #{e.message}"
